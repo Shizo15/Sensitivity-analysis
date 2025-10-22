@@ -1,0 +1,17 @@
+Przepływ danych w aplikacji
+
+1. Użytkownik wprowadza link do filmu z YouTube (formularz w dashboard/).
+
+2. youtube_integration pobiera komentarze przez YouTube Data API.
+
+3. Komentarze są przekazywane do data_processing, gdzie są czyszczone, tokenizowane, lematyzowane itd.
+
+4.Oczyszczone dane trafiają do sentiment_model, który:
+
+    ładuje wytrenowany model (model.pkl)
+
+    wykonuje predykcję sentymentu
+
+    zwraca wynik (pozytywny/negatywny/neutrealny + statystyki)
+
+5.dashboard wyświetla użytkownikowi wyniki (np. wykresy, procent pozytywnych komentarzy).
