@@ -37,6 +37,10 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'dashboard',
+    'data_processing',
+    'sentiment_model',
+    'youtube_integration'
 ]
 
 MIDDLEWARE = [
