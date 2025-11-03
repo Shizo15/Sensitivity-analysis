@@ -1,4 +1,8 @@
-py version: 3.10
+py version: 3.13
+
+Aby korzystać z zapytań do API YouTube w katalogu głównym projektu należy stworzyć plik .env w którym umieszkaczy nacz klucz api.
+W taki sposób:
+API_KEY=naszKlucz
 
 
 ABY ODPALIC SERWER :
