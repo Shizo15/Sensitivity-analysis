@@ -95,9 +95,13 @@
         {% endif %}
 
         <!-- Formularz YouTube -->
-        <form method="POST" onsubmit="return validateForm()">
+        <form method="POST">
             {% csrf_token %}
-            <input type="text" id="youtube_link" name="youtube_link" placeholder="Paste YouTube video link here" required>
+            
+            <input type="text" id="youtube_link" name="youtube_link" 
+                   placeholder="Paste YouTube video link here" 
+                   value="{{ submitted_link|default:'' }}" required> 
+                   
             <button type="submit">Analyze</button>
         </form>
     </div>
@@ -118,27 +122,6 @@
     </div>
 
     <script>
-        // Walidacja linku 
-        function validateForm() {
-            const link = document.getElementById('youtube_link').value.trim();
-            const ytPattern = /^(https?:\/\/)?(www\.)?(youtube\.com|youtu\.be)\//;
-            const existingError = document.getElementById('error-message');
-
-            if (existingError) existingError.remove();
-
-            if (!ytPattern.test(link)) {
-                const container = document.querySelector('.container');
-                const errorDiv = document.createElement('div');
-                errorDiv.id = 'error-message';
-                errorDiv.className = 'message error';
-                errorDiv.textContent = 'Please enter a valid YouTube link.';
-                container.insertBefore(errorDiv, container.querySelector('form'));
-                setTimeout(() => errorDiv.remove(), 3000);
-                return false;
-            }
-            return true;
-        }
-
         // Automatyczne zanikanie komunikatów Django
         window.onload = function() {
             const msgs = document.querySelectorAll('.message');
