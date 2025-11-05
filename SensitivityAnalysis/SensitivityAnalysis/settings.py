@@ -40,7 +40,8 @@ INSTALLED_APPS = [
     'dashboard',
     'data_processing',
     'sentiment_model',
-    'youtube_integration'
+    'youtube_integration',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [
