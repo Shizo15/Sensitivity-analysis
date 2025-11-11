@@ -20,5 +20,5 @@ from django.urls import path, include
 from dashboard import views
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.sentiment_dashboard),
+    path('', views.sentiment_dashboard, name='sentiment_dashboard'),
 ]
