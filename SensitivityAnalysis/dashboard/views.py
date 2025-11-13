@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect
 from django.contrib import messages
 from youtube_integration.services import get_yt_comments
 import re
+from youtube_integration.services import get_yt_comments, get_yt_video_meta
+
 
 def extract_video_id(link):
     if not link:
@@ -34,6 +36,20 @@ def sentiment_dashboard(request):
                 comments_list = get_yt_comments(video_id, max_results_total=500)
                 messages.success(request, f"Downloaded {len(comments_list)} comments.")
                 messages.info(request, f"Example comment: {comments_list[0]}")
+
+                title, thumb, channel, published_at, views, likes = get_yt_video_meta(video_id)
+
+                request.session['last_stats'] = {
+                    'comment_count': len(comments_list),
+                    'video_title': title,
+                    'thumbnail_url': thumb,
+                    'channel_title': channel,
+                    'published_at': published_at,
+                    'view_count': views,
+                    'like_count': likes,
+                }
+                return redirect('results_dashboard')
+
             except Exception as e:
                 messages.error(request, f"Unexpected error: {e}")
 
@@ -47,3 +63,16 @@ def sentiment_dashboard(request):
     }
 
     return render(request, "main.html", context)
+
+def results_dashboard(request):
+    data = request.session.get('last_stats', {})
+    context = {
+        'comment_count': data.get('comment_count'),
+        'video_title': data.get('video_title'),
+        'thumbnail_url': data.get('thumbnail_url'),
+        'channel_title': data.get('channel_title'),
+        'published_at': data.get('published_at'),
+        'view_count': data.get('view_count'),
+        'like_count': data.get('like_count'),
+    }
+    return render(request, "dashboard.html", context)

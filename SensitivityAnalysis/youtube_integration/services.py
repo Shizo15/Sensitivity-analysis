@@ -69,3 +69,44 @@ def get_yt_comments(video_id, max_results_total=500):
 
 
 #print(get_yt_comments("b0MnmShVLv8"))
+
+def get_yt_video_meta(video_id):
+
+    try:
+        api_service_name = "youtube"
+        api_version = "v3"
+        api_key = os.getenv("API_KEY")
+
+        youtube = googleapiclient.discovery.build(
+            api_service_name, api_version, developerKey=api_key
+        )
+
+        resp = youtube.videos().list(part="snippet,statistics", id=video_id).execute()
+        items = resp.get("items", [])
+        if not items:
+            return None, None, None, None, None, None
+
+        item = items[0]
+        snippet = item.get("snippet", {}) or {}
+        stats = item.get("statistics", {}) or {}
+
+        title = snippet.get("title")
+        channel_title = snippet.get("channelTitle")
+        published_at = snippet.get("publishedAt")
+
+        thumbs = snippet.get("thumbnails", {}) or {}
+        best = (thumbs.get("maxres") or thumbs.get("standard")
+                or thumbs.get("high") or thumbs.get("medium")
+                or thumbs.get("default") or {})
+        thumb_url = best.get("url")
+
+        view_count = stats.get("viewCount")
+        like_count = stats.get("likeCount")
+
+        return title, thumb_url, channel_title, published_at, view_count, like_count
+
+    except Exception:
+        return None, None, None, None, None, None
+
+
+
