@@ -2,4 +2,4 @@ from django.shortcuts import render
 
 # Create your views here.
 
-# how to run - python manage.py shell_plus --notebook
+# trenowane jest na 1_training_data_high_quality
