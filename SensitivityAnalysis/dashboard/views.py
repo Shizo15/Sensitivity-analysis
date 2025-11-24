@@ -34,8 +34,6 @@ def sentiment_dashboard(request):
         else:
             try:
                 comments_list = get_yt_comments(video_id, max_results_total=500)
-                messages.success(request, f"Downloaded {len(comments_list)} comments.")
-                messages.info(request, f"Example comment: {comments_list[0]}")
 
                 title, thumb, channel, published_at, views, likes = get_yt_video_meta(video_id)
 
