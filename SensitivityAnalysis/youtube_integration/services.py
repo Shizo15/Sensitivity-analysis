@@ -4,14 +4,17 @@ from urllib.error import HTTPError
 
 from dotenv import load_dotenv
 import googleapiclient.discovery
+from deep_translator import GoogleTranslator
+import pycld2 as cld2
 
 load_dotenv()
 
+CONFIDENCE_THRESHOLD = 0.90
+
 def get_yt_comments(video_id, max_results_total=500):
+    comments_list = []
 
     try:
-        comments_list = []
-
         api_service_name = "youtube"
         api_version = "v3"
         api_key = os.getenv("API_KEY")
@@ -26,49 +29,72 @@ def get_yt_comments(video_id, max_results_total=500):
             part='snippet',
             videoId=video_id,
             maxResults=100,
-            #order = "time"
         )
 
-        #Limited to 500 comments to prevent API limits from being exceeded
         while request and len(comments_list) < max_results_total:
-
             response = request.execute()
 
             for item in response.get("items", []):
-
                 snippet = item.get("snippet", {})
-                top_level_comment = snippet.get("topLevelComment", {})
-                comment_snippet = top_level_comment.get("snippet", {})
-
+                top_comment = snippet.get("topLevelComment", {})
+                comment_snippet = top_comment.get("snippet", {})
                 text = comment_snippet.get("textOriginal")
 
+                if not text:  # Skip empty comments
+                    continue
+
+                # Detect language using CLD2 and translate to English if needed
+                try:
+                    reliable, textBytesFound, details = cld2.detect(text)
+                    # details[0] = (language_name, language_code, percent, score)
+                    lang_code = details[0][1]
+                    percent = details[0][2]
+                    prob = percent / 100.0
+
+                    if lang_code == "en" and reliable and prob >= CONFIDENCE_THRESHOLD:
+                        lang = "en"
+                    else:
+                        lang = lang_code or "unknown"
+
+                except Exception:
+                    lang = "unknown"
+
+                if lang != "en":
+                    try:
+                        translated_text = GoogleTranslator(source='auto', target='en').translate(text)
+                        if translated_text:
+                            text = translated_text
+                    except Exception as e:
+                        logging.warning(f"Translation failed: {text[:50]}... Error: {e}")
+
+                # Add only non-empty text
                 if text:
                     comments_list.append(text)
 
-            #Next comments page (if exists)
+            # Next comments page
             request = youtube.commentThreads().list_next(
                 previous_request=request,
                 previous_response=response
             )
 
-        logging.info(f"Pomyślnie pobrano {len(comments_list)} komentarzy dla video_id: {video_id}")
+        logging.info(f"Fetched and translated {len(comments_list)} comments for video_id: {video_id}")
 
-        #ile = len(comments_list)
-        #return ile, comments_list
+        # Print comments in the console
+        print("\n--- TRANSLATED COMMENTS ---")
+        for c in comments_list:
+            print(c)
+        print("\n--- END ---\n")
+
         return comments_list
 
     except HTTPError as e:
-        error_message = f"Błąd API YouTube (HTTPError): {e.reason})"
-        logging.error(error_message)
-        raise Exception(error_message)
+        logging.error(f"YouTube API error (HTTPError): {e.reason}")
+        raise
 
     except Exception as e:
-        error_message = f"Wystąpił nieoczekiwany błąd podczas pobierania komentarzy: {e}"
-        logging.error(error_message)
-        raise Exception(error_message)
+        logging.error(f"Unexpected error: {e}")
+        raise
 
-
-#print(get_yt_comments("b0MnmShVLv8"))
 
 def get_yt_video_meta(video_id):
 
@@ -107,6 +133,4 @@ def get_yt_video_meta(video_id):
 
     except Exception:
         return None, None, None, None, None, None
-
-
 
