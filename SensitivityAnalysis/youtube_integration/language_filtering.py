@@ -1,6 +1,8 @@
 # methods for filtering comments into en and non-en
 # each method returns a tuple (english_comments, non_english_comments, stats_dict)
 
+#functionf for filtering comments into en and non-en used in script
+
 import time
 import math
 

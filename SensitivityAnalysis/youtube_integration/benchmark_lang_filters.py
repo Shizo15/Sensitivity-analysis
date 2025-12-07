@@ -2,6 +2,8 @@
 python manage.py shell
 from youtube_integration.benchmark_lang_filters import test_all_filters
 test_all_filters("ID_FILMU")
+
+Benchmark of language filtering methods on YouTube comments.
 """
 
 from youtube_integration.services import get_yt_comments
