@@ -17,10 +17,12 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
-from dashboard import views
+from dashboard import views as dashboard_views
+from data_processing import views as proces_views
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', views.sentiment_dashboard, name='sentiment_dashboard'),
-    path('dashboard/', views.results_dashboard, name='results_dashboard'),
+    path('', dashboard_views.sentiment_dashboard, name='sentiment_dashboard'),
+    path('dashboard/', dashboard_views.results_dashboard, name='results_dashboard'),
+    path('analyze/', proces_views.run_analysis, name='run_analysis'),
 
 ]

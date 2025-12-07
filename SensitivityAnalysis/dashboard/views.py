@@ -4,6 +4,13 @@ from youtube_integration.services import get_yt_comments
 import re
 from youtube_integration.services import get_yt_comments, get_yt_video_meta
 
+from data_processing.views import MODEL_CATALOG
+
+DISPLAY_NAMES = {
+    'logistic_regression': 'Regresja Logistyczna',
+    'svc': 'Support Vector Machine (SVC)',
+    'naive_bayes': 'Klasyfikator Naiwnego Bayesa',
+}
 
 def extract_video_id(link):
     if not link:
@@ -22,42 +29,49 @@ def extract_video_id(link):
 
 
 def sentiment_dashboard(request):
-    comments_list = None
+    """
+    Loads yt link and chose of model from form,
+    saves params in session and redirect to run_analysis view.
+    """
+
     submitted_link = ""
 
     if request.method == 'POST':
         submitted_link = request.POST.get("youtube_link", "").strip()
         video_id = extract_video_id(submitted_link)
 
+        # load selected model from form
+        model_name = request.POST.get("model_select", "logistic_regression")
+
         if not video_id:
-            messages.error(request, "Please enter a valid YouTube link.")
+            messages.error(request, "Input valid YouTube link.")
         else:
-            try:
-                comments_list = get_yt_comments(video_id, max_results_total=500)
+            # check if selected model is in catalog
+            if model_name not in MODEL_CATALOG:
+                messages.error(request, f"Chosen model ({model_name}) can't be used.")
+                return redirect('sentiment_dashboard')
 
-                title, thumb, channel, published_at, views, likes = get_yt_video_meta(video_id)
+            # save in session params for analysis
+            request.session['analysis_params'] = {
+                'video_id': video_id,
+                'model_name': model_name
+            }
 
-                request.session['last_stats'] = {
-                    'comment_count': len(comments_list),
-                    'video_title': title,
-                    'thumbnail_url': thumb,
-                    'channel_title': channel,
-                    'published_at': published_at,
-                    'view_count': views,
-                    'like_count': likes,
-                }
-                return redirect('results_dashboard')
+            return redirect('run_analysis')
 
-            except Exception as e:
-                messages.error(request, f"Unexpected error: {e}")
-
-        # PRG: Redirect back to the same page to clear POST data
         return redirect('sentiment_dashboard')
 
-    # GET request — just render a clean page
+    # GET request - load page if no form submitted
+
+    # create list of model choices for template
+    model_choices_for_template = [
+        (key, DISPLAY_NAMES.get(key, key.replace('_', ' ').title()))
+        for key in MODEL_CATALOG.keys()
+    ]
+
     context = {
-        'comments': comments_list,
         'submitted_link': "",
+        'model_choices': model_choices_for_template,
     }
 
     return render(request, "main.html", context)

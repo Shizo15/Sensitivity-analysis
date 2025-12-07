@@ -23,7 +23,7 @@
             text-align: center;
             margin-top: 40px;
         }
-        input[type="text"] {
+        input[type="text"], select {
             width: 100%;
             padding: 10px;
             margin: 12px 0;
@@ -96,9 +96,22 @@
         <!-- YouTube form -->
         <form method="POST">
             {% csrf_token %}
-            <input type="text" id="youtube_link" name="youtube_link" 
-                   placeholder="Paste YouTube video link here" 
+            <input type="text" id="youtube_link" name="youtube_link"
+                   placeholder="Paste YouTube video link here"
                    value="{{ submitted_link|default:'' }}" required>
+
+            <label for="model_select" style="display: block; margin-top: 15px; margin-bottom: 5px; text-align: left; font-size: 0.9em; color: #4b5563;">
+                Wybierz model do analizy:
+            </label>
+            <select id="model_select" name="model_select"
+                    style="width: 100%; padding: 10px; margin-bottom: 12px; border-radius: 8px; border: 1px solid #ccc;">
+                {% for key, name in model_choices %}
+                    <option value="{{ key }}"
+                            {% if key == 'logistic_regression' %}selected{% endif %}>
+                        {{ name }}
+                    </option>
+                {% endfor %}
+            </select>
             <button type="submit">Analyze</button>
         </form>
     </div>
@@ -107,9 +120,9 @@
     <div class="about">
         <h3>About This Project</h3>
         <p>
-            This web application performs sentiment analysis on YouTube video comments. 
-            By entering a YouTube link, the system retrieves comments and analyzes their sentiment 
-            — determining whether they express positive, neutral, or negative emotions.  
+            This web application performs sentiment analysis on YouTube video comments.
+            By entering a YouTube link, the system retrieves comments and analyzes their sentiment
+            — determining whether they express positive, neutral, or negative emotions.
             The goal of this project is to help visualize audience reactions and opinions on YouTube content.
         </p>
 
