@@ -5,9 +5,11 @@ from urllib.error import HTTPError
 from dotenv import load_dotenv
 import googleapiclient.discovery
 from deep_translator import GoogleTranslator
-from langdetect import detect, LangDetectException
+import pycld2 as cld2
 
 load_dotenv()
+
+CONFIDENCE_THRESHOLD = 0.90
 
 def get_yt_comments(video_id, max_results_total=500):
     comments_list = []
@@ -41,10 +43,20 @@ def get_yt_comments(video_id, max_results_total=500):
                 if not text:  # Skip empty comments
                     continue
 
-                # Detect language and translate to English if needed
+                # Detect language using CLD2 and translate to English if needed
                 try:
-                    lang = detect(text)
-                except LangDetectException:
+                    reliable, textBytesFound, details = cld2.detect(text)
+                    # details[0] = (language_name, language_code, percent, score)
+                    lang_code = details[0][1]
+                    percent = details[0][2]
+                    prob = percent / 100.0
+
+                    if lang_code == "en" and reliable and prob >= CONFIDENCE_THRESHOLD:
+                        lang = "en"
+                    else:
+                        lang = lang_code or "unknown"
+
+                except Exception:
                     lang = "unknown"
 
                 if lang != "en":
@@ -121,3 +133,4 @@ def get_yt_video_meta(video_id):
 
     except Exception:
         return None, None, None, None, None, None
+
