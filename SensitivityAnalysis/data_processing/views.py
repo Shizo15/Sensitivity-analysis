@@ -8,8 +8,6 @@ from django.views import View
 
 # 1. IMPORT loading yt comments
 from youtube_integration.services import get_yt_comments, get_yt_video_meta
-# 2. IMPORT text_tokenizer
-# from data_processing.preprocessing_text import text_tokenizer
 
 
 # ---------preprocessing  ----------
@@ -19,7 +17,7 @@ import re
 import spacy
 
 stopwords_set = set(STOP_WORDS)
-exclude_words = {'no', 'not', 'never', 'neither', 'nor', 'none', 'cannot'} # Słowa, które CHCESZ zostawić
+exclude_words = {'no', 'not', 'never', 'neither', 'nor', 'none', 'cannot'} # Words to keep
 final_stopwords = list(stopwords_set - exclude_words)
 
 
@@ -36,11 +34,10 @@ def clean_text(text):
     return temp
 
 # Lemantization with spaCy:
-
 try:
     nlp = spacy.load("en_core_web_sm", disable=['parser', 'ner'])
 except OSError:
-    print("Pobieranie modelu językowego spaCy (en_core_web_sm)...")
+    print("Downloading spaCy (en_core_web_sm)...")
     from spacy.cli import download
     download("en_core_web_sm")
     nlp = spacy.load("en_core_web_sm", disable=['parser', 'ner'])
@@ -50,7 +47,7 @@ def text_tokenizer(text):
 
     doc = nlp(cleaned_text)
 
-    # (np. "was" -> "be", "dogs" -> "dog")
+    # (e.g., "was" -> "be", "dogs" -> "dog")
     lemmas = [token.lemma_ for token in doc]
 
     # Filtering
@@ -85,7 +82,6 @@ except Exception as e:
 
 
 # --- run model ---
-
 def run_analysis(request):
     """
     Load video_id i model_name from sesji, and makes ML analysis,
@@ -105,23 +101,30 @@ def run_analysis(request):
     CLASSIFIER = MODEL_CATALOG.get(model_name)
 
     if CLASSIFIER is None or VECTORIZER is None:
-        messages.error(request, f"Błąd: Model '{model_name}' lub wektoryzator nie został załadowany.")
+        messages.error(request, f"Error: Model '{model_name}' or vector isn't loaded.")
         return redirect('sentiment_dashboard')
 
 
     try:
+        # loading comments and video meta from get YT API
         comments_list = get_yt_comments(video_id, max_results_total=500)
         title, thumb, channel, published_at, views, likes = get_yt_video_meta(video_id)
 
+        # Preprocess comments
+        processed_comments = []
+        for comment in comments_list:
+            tokens = text_tokenizer(comment)
+            processed_comments.append(" ".join(tokens))
 
         # Vectorize comments and predict sentiments
-        comments_vectorized = VECTORIZER.transform(comments_list)
+        comments_vectorized = VECTORIZER.transform(processed_comments)
         predictions = CLASSIFIER.predict(comments_vectorized)
 
         # Calculate sentiment counts (e.g., positive, negative, neutral)
         sentiment_counts = {}
         for pred in predictions:
-            sentiment_counts[pred] = sentiment_counts.get(pred, 0) + 1
+            key = int(pred)
+            sentiment_counts[key] = sentiment_counts.get(key, 0) + 1
 
         # TODO add more statistics if needed
 
@@ -140,5 +143,5 @@ def run_analysis(request):
         return redirect('results_dashboard')
 
     except Exception as e:
-        messages.error(request, f"Błąd analizy danych: {e}")
+        messages.error(request, f"Error in data analysis: {e}")
         return redirect('sentiment_dashboard')
