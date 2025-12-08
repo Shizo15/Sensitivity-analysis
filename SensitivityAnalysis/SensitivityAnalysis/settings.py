@@ -39,7 +39,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'dashboard',
     'data_processing',
-    'sentiment_model',
     'youtube_integration',
     'django_extensions',
 ]
