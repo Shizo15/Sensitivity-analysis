@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+{% load l10n %}
 <head>
   <meta charset="UTF-8" />
   <title>YouTube Comment Sentiment Analysis — Results</title>
@@ -17,6 +18,32 @@
     .kpi{display:flex;align-items:center;justify-content:center;height:220px;font-size:34px;font-weight:700;color:#0f172a}
     .kpi small{font-weight:400;font-size:16px;margin-left:8px;color:#334155}
     .back{display:inline-block;margin-top:16px;text-decoration:none;background:#2563eb;color:#fff;padding:8px 14px;border-radius:8px}
+
+    /* gauge for average sentiment */
+    .gauge-wrap{
+      background:#e5e7eb;
+      border-radius:999px;
+      height:22px;
+      padding:2px;
+      display:flex;
+      align-items:center;
+      margin-top:14px;
+      width:100%;
+      max-width:360px;
+    }
+    .gauge-fill{
+      height:100%;
+      border-radius:999px;
+      background:linear-gradient(90deg,#ef4444,#eab308,#22c55e);
+      width:0;
+      transition:width .4s ease;
+    }
+    .gauge-label{
+      margin-top:8px;
+      text-align:center;
+      font-size:14px;
+      color:#475569;
+    }
   </style>
 </head>
 <body>
@@ -53,31 +80,106 @@
       <!-- 2) Pie chart -->
       <div class="card" style="grid-column: span 6;">
         <h3>Sentiment share</h3>
-        <div class="placeholder">
-          pie chart (positive / neutral / negative) — to be added
-        </div>
+        {% if sentiment_share %}
+          <canvas id="sentimentPie" style="max-width:320px; margin:10px auto 0 auto;"></canvas>
+        {% else %}
+          <div class="placeholder">
+            No sentiment data available.
+          </div>
+        {% endif %}
       </div>
 
       <!-- 3) Average sentiment -->
       <div class="card" style="grid-column: span 6;">
         <h3>Overall sentiment (avg)</h3>
-        <div class="placeholder">
-          thermometer / gauge — show single average value (no scaling yet) — to be added
-        </div>
+        {% if avg_sentiment_score %}
+          <div class="kpi" style="flex-direction:column; height:auto;">
+            <div>
+              {{ avg_sentiment_score|floatformat:2 }}
+              <small>(-1 = negative, 0 = neutral, 1 = positive)</small>
+            </div>
+            {% if avg_sentiment_percent %}
+              <div class="gauge-wrap">
+                <div class="gauge-fill" style="width: {{ avg_sentiment_percent|unlocalize }}%;"></div>
+              </div>
+              <div class="gauge-label">
+                {{ avg_sentiment_percent|floatformat:0 }}% towards positive sentiment
+              </div>
+            {% endif %}
+          </div>
+        {% else %}
+          <div class="placeholder">
+            No sentiment score available.
+          </div>
+        {% endif %}
       </div>
 
       <!-- 4) Dominant sentiment -->
       <div class="card" style="grid-column: span 6;">
         <h3>Dominant sentiment</h3>
-        <div class="placeholder">
-          show most frequent category: positive / neutral / negative (3-class: good / average / bad) — to be added
-        </div>
+        {% if dominant_sentiment %}
+          <div class="kpi" style="flex-direction:column; height:auto;">
+            <div style="font-size:30px; text-transform:capitalize;">
+              {{ dominant_sentiment }}
+            </div>
+            {% if dominant_sentiment_percent %}
+              <div style="margin-top:8px; font-size:16px; color:#475569;">
+                {{ dominant_sentiment_percent|floatformat:1 }}% of analyzed comments
+              </div>
+            {% endif %}
+          </div>
+        {% else %}
+          <div class="placeholder">
+            No dominant sentiment detected.
+          </div>
+        {% endif %}
       </div>
 
     </div>
 
-
     <a class="back" href="{% url 'sentiment_dashboard' %}">← Back</a>
   </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    (function () {
+      const dataObj = {{ sentiment_share_json|default:"{}"|safe }};
+      const keys = Object.keys(dataObj);
+      if (!keys.length) return;
+
+      const canvas = document.getElementById('sentimentPie');
+      if (!canvas) return;
+
+    const orderedClasses = ["positive", "neutral", "negative"];
+    const labels = ["Positive", "Neutral", "Negative"];
+    const colors = ["#22c55e", "#facc15", "#ef4444"];
+    const values = orderedClasses.map(cls => dataObj[cls] || 0);
+
+      new Chart(canvas, {
+        type: 'pie',
+        data: {
+          labels: labels,
+          datasets: [{
+            data: values,
+            backgroundColor: colors,
+          }]
+        },
+        options: {
+          plugins: {
+            legend: { position: 'bottom' },
+            tooltip: {
+              callbacks: {
+                label: function (ctx) {
+                  const label = ctx.label || '';
+                  const v = ctx.parsed || 0;
+                  return label + ': ' + v + '%';
+                }
+              }
+            }
+          }
+        }
+      });
+    })();
+  </script>
 </body>
 </html>

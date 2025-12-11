@@ -5,6 +5,7 @@ import re
 from youtube_integration.services import get_yt_comments, get_yt_video_meta
 
 from data_processing.views import MODEL_CATALOG
+import json
 
 DISPLAY_NAMES = {
     'logistic_regression': 'Regresja Logistyczna',
@@ -78,6 +79,9 @@ def sentiment_dashboard(request):
 
 def results_dashboard(request):
     data = request.session.get('last_stats', {})
+
+    sentiment_share = data.get('sentiment_share') or {}
+
     context = {
         'comment_count': data.get('comment_count'),
         'video_title': data.get('video_title'),
@@ -86,5 +90,14 @@ def results_dashboard(request):
         'published_at': data.get('published_at'),
         'view_count': data.get('view_count'),
         'like_count': data.get('like_count'),
+
+        'sentiment_share': sentiment_share,
+        'sentiment_share_json': json.dumps(sentiment_share),
+
+        'avg_sentiment_score': data.get('avg_sentiment_score'),
+        'avg_sentiment_percent': data.get('avg_sentiment_percent'),
+        'dominant_sentiment': data.get('dominant_sentiment'),
+        'dominant_sentiment_percent': data.get('dominant_sentiment_percent'),
+        'model_used': data.get('model_used'),
     }
     return render(request, "dashboard.html", context)
