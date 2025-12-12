@@ -171,11 +171,46 @@ def run_analysis(request):
             # 3. Prediction
             predictions = CLASSIFIER.predict(comments_vectorized)
 
-        # Calculate sentiment counts (e.g., positive, negative, neutral)
+        # Calculate sentiment counts (0 = negative, 1 = neutral, 2 = positive)
         sentiment_counts = {}
         for pred in predictions:
             key = int(pred)
             sentiment_counts[key] = sentiment_counts.get(key, 0) + 1
+
+        for k in [0, 1, 2]:
+            sentiment_counts.setdefault(k, 0)
+
+        total = sum(sentiment_counts.values()) or 1
+
+        idx_to_label = {
+            0: 'negative',
+            1: 'neutral',
+            2: 'positive',
+        }
+
+        sentiment_share = {
+            idx_to_label[k]: round((count / total) * 100.0, 1)
+            for k, count in sentiment_counts.items()
+        }
+
+        if len(predictions) > 0:
+            old_avg = float(sum(predictions) / len(predictions))  # 0 to 2
+            avg_sentiment_score = round(old_avg - 1, 2)  # -1 to +1
+            avg_sentiment_percent = round(((avg_sentiment_score + 1) / 2) * 100, 1)
+
+        else:
+            avg_sentiment_score = None
+            avg_sentiment_percent = None
+
+        dominant_class = max(sentiment_counts, key=sentiment_counts.get) if total > 0 else None
+        if dominant_class is not None:
+            dominant_sentiment = idx_to_label[dominant_class]
+            dominant_sentiment_percent = round(
+                (sentiment_counts[dominant_class] / total) * 100.0, 1
+            )
+        else:
+            dominant_sentiment = None
+            dominant_sentiment_percent = None
 
         # Save results in session
         request.session['last_stats'] = {
@@ -183,9 +218,17 @@ def run_analysis(request):
             'video_title': title,
             'thumbnail_url': thumb,
             'channel_title': channel,
+            'published_at': published_at,
+            'view_count': views,
+            'like_count': likes,
+
             'sentiment_counts': sentiment_counts,
+            'sentiment_share': sentiment_share,
+            'avg_sentiment_score': avg_sentiment_score,
+            'avg_sentiment_percent': avg_sentiment_percent,
+            'dominant_sentiment': dominant_sentiment,
+            'dominant_sentiment_percent': dominant_sentiment_percent,
             'model_used': model_name,
-            # ... other statistics ...
         }
 
         # Redirect to results dashboard
