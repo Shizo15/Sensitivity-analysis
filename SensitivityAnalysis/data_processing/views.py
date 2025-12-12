@@ -16,6 +16,11 @@ from spacy.lang.en.stop_words import STOP_WORDS
 import re
 import spacy
 
+# deep models
+import torch
+from transformers import AutoTokenizer, AutoModelForSequenceClassification
+import torch.nn.functional as F
+
 stopwords_set = set(STOP_WORDS)
 exclude_words = {'no', 'not', 'never', 'neither', 'nor', 'none', 'cannot'} # Words to keep
 final_stopwords = list(stopwords_set - exclude_words)
@@ -57,6 +62,7 @@ def text_tokenizer(text):
 # --- LOAD MODELS ---
 # location of saved models
 MODEL_DIR = os.path.join(settings.BASE_DIR, 'data_processing', 'colab_train_models', 'models')
+ROBERTA_MODEL_DIR = os.path.join(settings.BASE_DIR, 'data_processing', 'colab_train_models', 'models', 'roberta_model')
 
 try:
     # Load the TF-IDF Vectorizer
@@ -72,6 +78,20 @@ try:
         'naive_bayes': naive_bayes_model,
         'svc': svc_model,
     }
+    # Loading RoBERTa model
+    if os.path.exists(ROBERTA_MODEL_DIR):
+        print("Loading RoBERTa model...")
+        # Loading tokenizer
+        TOKENIZER_ROBERTA = AutoTokenizer.from_pretrained(ROBERTA_MODEL_DIR)
+        model_roberta = AutoModelForSequenceClassification.from_pretrained(ROBERTA_MODEL_DIR)
+
+        #Switching to evaluation mode
+        model_roberta.eval()
+
+        MODEL_CATALOG['roberta'] = model_roberta
+        print("RoBERTa loaded successfully.")
+    else:
+        print(f"Warning: RoBERTa directory not found at {ROBERTA_MODEL_DIR}")
 
     print("Models loaded successfully.")
 
@@ -110,15 +130,46 @@ def run_analysis(request):
         comments_list = get_yt_comments(video_id, max_results_total=500)
         title, thumb, channel, published_at, views, likes = get_yt_video_meta(video_id)
 
-        # Preprocess comments
-        processed_comments = []
-        for comment in comments_list:
-            tokens = text_tokenizer(comment)
-            processed_comments.append(" ".join(tokens))
+        predictions = []
 
-        # Vectorize comments and predict sentiments
-        comments_vectorized = VECTORIZER.transform(processed_comments)
-        predictions = CLASSIFIER.predict(comments_vectorized)
+        # Deep model
+        if model_name == 'roberta':
+            for comment in comments_list:
+                # Tokenization
+                inputs = TOKENIZER_ROBERTA(
+                    comment,
+                    return_tensors="pt",
+                    truncation=True,
+                    max_length=128,
+                    padding=True
+                )
+
+                # Prediction
+                with torch.no_grad():
+                    outputs = CLASSIFIER(**inputs)
+
+                probs = F.softmax(outputs.logits, dim=-1)
+                pred_label = torch.argmax(probs, dim=-1).item()
+
+                final_pred = pred_label - 1
+                predictions.append(final_pred)
+
+        # Shallow models
+        else:
+            if VECTORIZER is None:
+                raise ValueError("Vectorizer not loaded for shallow models")
+
+            # 1. Preprocessing (lematization, stop words removal)
+            processed_comments = []
+            for comment in comments_list:
+                tokens = text_tokenizer(comment)
+                processed_comments.append(" ".join(tokens))
+
+            # 2. Vectorization
+            comments_vectorized = VECTORIZER.transform(processed_comments)
+
+            # 3. Prediction
+            predictions = CLASSIFIER.predict(comments_vectorized)
 
         # Calculate sentiment counts (0 = negative, 1 = neutral, 2 = positive)
         sentiment_counts = {}
