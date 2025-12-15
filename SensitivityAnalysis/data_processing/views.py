@@ -171,6 +171,21 @@ def run_analysis(request):
             # 3. Prediction
             predictions = CLASSIFIER.predict(comments_vectorized)
 
+        idx_to_label = {
+            0: 'negative',
+            1: 'neutral',
+            2: 'positive',
+        }
+
+        classified_comments = []
+        for text, pred in zip(comments_list, predictions):
+            p = int(pred)
+            label = idx_to_label.get(p, 'unknown')
+            classified_comments.append({
+                'text': text,
+                'label': label
+            })
+
         # Calculate sentiment counts (0 = negative, 1 = neutral, 2 = positive)
         sentiment_counts = {}
         for pred in predictions:
@@ -229,6 +244,8 @@ def run_analysis(request):
             'dominant_sentiment': dominant_sentiment,
             'dominant_sentiment_percent': dominant_sentiment_percent,
             'model_used': model_name,
+            'classified_comments': classified_comments,
+
         }
 
         # Redirect to results dashboard
