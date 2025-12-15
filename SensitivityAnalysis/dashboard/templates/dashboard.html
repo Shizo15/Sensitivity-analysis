@@ -30,6 +30,7 @@
       margin-top:14px;
       width:100%;
       max-width:360px;
+      position:relative;
     }
     .gauge-fill{
       height:100%;
@@ -38,11 +39,55 @@
       width:0;
       transition:width .4s ease;
     }
-    .gauge-label{
-      margin-top:8px;
-      text-align:center;
-      font-size:14px;
-      color:#475569;
+    .gauge-text{
+      position:absolute;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:13px;
+      font-weight:700;
+      color:#0f172a;
+      pointer-events:none;
+    }
+
+    /* scrollable comments table */
+    .comments-box{
+      margin-top: 12px;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      max-height: 220px;   /* scroll height inside the card */
+      overflow-y: auto;
+    }
+    .comments-table{
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .comments-table th, .comments-table td{
+      padding: 10px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: top;
+    }
+    .comments-table th{
+      position: sticky;
+      top: 0;
+      background: #fff;
+      z-index: 1;
+      text-align: left;
+      color: #1e3a8a;
+      font-weight: 700;
+    }
+    .badge{
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: capitalize;
+      background: #f1f5f9;
+      color: #0f172a;
+      white-space: nowrap;
     }
   </style>
 </head>
@@ -69,11 +114,37 @@
 
     <div class="grid">
 
-      <!-- 1) Comments analyzed -->
+      <!-- 1) Comments analyzed + scroll list -->
       <div class="card" style="grid-column: span 6;">
         <h3>Comments analyzed</h3>
-        <div class="kpi">
-          {{ comment_count|default:"0" }} <small>comments</small>
+
+        <!-- number aligned near top -->
+        <div style="font-size:28px;font-weight:800;color:#0f172a;margin-top:6px;">
+          {{ comment_count|default:"0" }}
+          <span style="font-weight:400;font-size:14px;color:#334155;">comments</span>
+        </div>
+
+        <div class="comments-box">
+          <table class="comments-table">
+            <thead>
+              <tr>
+                <th style="width:78%;">Comment</th>
+                <th style="width:22%;">Sentiment</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in classified_comments %}
+                <tr>
+                  <td>{{ item.text }}</td>
+                  <td><span class="badge">{{ item.label }}</span></td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="2" style="color:#64748b;">No comments to display.</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
         </div>
       </div>
 
@@ -98,12 +169,11 @@
               {{ avg_sentiment_score|floatformat:2 }}
               <small>(-1 = negative, 0 = neutral, 1 = positive)</small>
             </div>
+
             {% if avg_sentiment_percent %}
               <div class="gauge-wrap">
                 <div class="gauge-fill" style="width: {{ avg_sentiment_percent|unlocalize }}%;"></div>
-              </div>
-              <div class="gauge-label">
-                {{ avg_sentiment_percent|floatformat:0 }}% towards positive sentiment
+                <div class="gauge-text">{{ avg_sentiment_percent|floatformat:0 }}%</div>
               </div>
             {% endif %}
           </div>
@@ -150,10 +220,10 @@
       const canvas = document.getElementById('sentimentPie');
       if (!canvas) return;
 
-    const orderedClasses = ["positive", "neutral", "negative"];
-    const labels = ["Positive", "Neutral", "Negative"];
-    const colors = ["#22c55e", "#facc15", "#ef4444"];
-    const values = orderedClasses.map(cls => dataObj[cls] || 0);
+      const orderedClasses = ["positive", "neutral", "negative"];
+      const labels = ["Positive", "Neutral", "Negative"];
+      const colors = ["#22c55e", "#facc15", "#ef4444"];
+      const values = orderedClasses.map(cls => dataObj[cls] || 0);
 
       new Chart(canvas, {
         type: 'pie',

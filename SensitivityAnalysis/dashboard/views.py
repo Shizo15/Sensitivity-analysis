@@ -99,5 +99,7 @@ def results_dashboard(request):
         'dominant_sentiment': data.get('dominant_sentiment'),
         'dominant_sentiment_percent': data.get('dominant_sentiment_percent'),
         'model_used': data.get('model_used'),
+        'classified_comments': data.get('classified_comments', []),
+
     }
     return render(request, "dashboard.html", context)
