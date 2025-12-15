@@ -20,9 +20,9 @@ from django.urls import path, include
 from dashboard import views as dashboard_views
 from data_processing import views as proces_views
 urlpatterns = [
-    path('admin/', admin.site.urls),
     path('', dashboard_views.sentiment_dashboard, name='sentiment_dashboard'),
-    path('dashboard/', dashboard_views.results_dashboard, name='results_dashboard'),
+    path('loading/', dashboard_views.loading_view, name='loading'),
     path('analyze/', proces_views.run_analysis, name='run_analysis'),
-
+    path('dashboard/', dashboard_views.results_dashboard, name='results_dashboard'),
 ]
+

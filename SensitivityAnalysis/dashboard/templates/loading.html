@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Processing...</title>
+<style>
+body {
+  margin: 0;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: Arial, sans-serif;
+  background: #f9fafb;
+}
+.box {
+  background: white;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 0 12px rgba(0,0,0,.1);
+  text-align: center;
+}
+.spinner {
+  width: 48px;
+  height: 48px;
+  border: 6px solid #e5e7eb;
+  border-top: 6px solid #2563eb;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 20px auto;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>
+</head>
+<body>
+
+<div class="box">
+  <h2>Analyzing comments</h2>
+  <div class="spinner"></div>
+  <p>This may take a few minutes.<br>Please do not close the page.</p>
+</div>
+
+<script>
+fetch("{% url 'run_analysis' %}")
+  .then(() => window.location.href = "{% url 'results_dashboard' %}");
+</script>
+
+</body>
+</html>

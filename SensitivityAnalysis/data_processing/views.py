@@ -1,4 +1,5 @@
 from django.contrib import messages
+from django.http import JsonResponse
 from django.shortcuts import render, redirect
 import os
 import joblib
@@ -248,8 +249,7 @@ def run_analysis(request):
 
         }
 
-        # Redirect to results dashboard
-        return redirect('results_dashboard')
+        return JsonResponse({"status": "done"})
 
     except Exception as e:
         messages.error(request, f"Error in data analysis: {e}")
