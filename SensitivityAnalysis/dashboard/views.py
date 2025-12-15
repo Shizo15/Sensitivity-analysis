@@ -50,7 +50,7 @@ def sentiment_dashboard(request):
             # check if selected model is in catalog
             if model_name not in MODEL_CATALOG:
                 messages.error(request, f"Chosen model ({model_name}) can't be used.")
-                return redirect('sentiment_dashboard')
+                return redirect('loading')
 
             # save in session params for analysis
             request.session['analysis_params'] = {
@@ -58,9 +58,9 @@ def sentiment_dashboard(request):
                 'model_name': model_name
             }
 
-            return redirect('run_analysis')
+            return redirect('loading')
 
-        return redirect('sentiment_dashboard')
+        return redirect('loading')
 
     # GET request - load page if no form submitted
 
@@ -76,6 +76,9 @@ def sentiment_dashboard(request):
     }
 
     return render(request, "main.html", context)
+
+def loading_view(request):
+    return render(request, "loading.html")
 
 def results_dashboard(request):
     data = request.session.get('last_stats', {})
