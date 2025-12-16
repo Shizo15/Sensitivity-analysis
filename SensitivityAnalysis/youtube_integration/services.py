@@ -95,10 +95,7 @@ def get_yt_comments(video_id, max_results_total=500):
         print(f"Łączny czas:{total_time:.2f} s")
         print("\n==============================================\n")
 
-        print("\n--- TRANSLATED COMMENTS ---")
-        for c in comments_list:
-            print(c)
-        print("\n--- END ---\n")
+
 
         return comments_list
 
