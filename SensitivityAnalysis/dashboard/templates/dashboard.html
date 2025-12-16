@@ -163,14 +163,14 @@
       <!-- 3) Average sentiment -->
       <div class="card" style="grid-column: span 6;">
         <h3>Overall sentiment (avg)</h3>
-        {% if avg_sentiment_score %}
+        {% if avg_sentiment_score is not None %}
           <div class="kpi" style="flex-direction:column; height:auto;">
             <div>
               {{ avg_sentiment_score|floatformat:2 }}
               <small>(-1 = negative, 0 = neutral, 1 = positive)</small>
             </div>
 
-            {% if avg_sentiment_percent %}
+            {% if avg_sentiment_percent is not None %}
               <div class="gauge-wrap">
                 <div class="gauge-fill" style="width: {{ avg_sentiment_percent|unlocalize }}%;"></div>
                 <div class="gauge-text">{{ avg_sentiment_percent|floatformat:0 }}%</div>
