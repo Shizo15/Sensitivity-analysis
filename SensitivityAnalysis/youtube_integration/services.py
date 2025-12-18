@@ -14,6 +14,8 @@ CONFIDENCE_THRESHOLD = 0.90
 
 def get_yt_comments(video_id, max_results_total=500):
     comments_list = []
+    to_translate_index = []
+    to_translate_text = []
 
     try:
         # TIMER CAŁKOWITY
@@ -66,24 +68,34 @@ def get_yt_comments(video_id, max_results_total=500):
                     lang = "unknown"
                 filter_time_total += (time.time() - f_start)
 
-                # TIMER TLUMACZENIE
-                if lang != "en":
-                    t_start = time.time()
-                    try:
-                        translated_text = GoogleTranslator(source='auto', target='en').translate(text)
-                        if translated_text:
-                            text = translated_text
-                    except Exception as e:
-                        logging.warning(f"Translation failed: {text[:50]}... Error: {e}")
-                    translation_time_total += (time.time() - t_start)
+                current_index = len(comments_list)
+                comments_list.append(text)
 
-                if text:
-                    comments_list.append(text)
+                if lang != "en":
+                    to_translate_index.append(current_index)
+                    to_translate_text.append(text)
 
             request = youtube.commentThreads().list_next(
                 previous_request=request,
                 previous_response=response
             )
+
+        #Translating whole batch of comment in different language than english - tu może być problem dla większych ilości komentarzy bo api do tłumaczenia może mieć limity
+        if to_translate_text:
+            t_start = time.time()
+            try:
+                translator = GoogleTranslator(source="auto", target="en")
+                translated_texts = translator.translate_batch(to_translate_text)
+
+                for i, translated_text in enumerate(translated_texts):
+                    if translated_text:
+                        index_in_main_list=to_translate_index[i]
+                        comments_list[index_in_main_list]=translated_text
+
+            except Exception as e:
+                logging.warning(f"Batch translation failed: {e}")
+
+            translation_time_total = time.time() - t_start
 
         total_end = time.time()
         total_time = total_end - total_start
