@@ -50,15 +50,31 @@ def sentiment_dashboard(request):
             messages.error(request, "Input valid YouTube link.")
         else:
             # Check comment limit before proceeding, when 10000 comments exceeded, show error.
-            is_allowed, error_msg = check_video_limit(video_id)
+            is_allowed, limit_msg = check_video_limit(video_id)
 
             if not is_allowed:
-                # Show error message about limit exceeded
-                messages.error(request, error_msg)
+                # loading and showing pro modal
+
+                model_choices_for_template = [
+                    (key, DISPLAY_NAMES.get(key, key.replace('_', ' ').title()))
+                    for key in MODEL_CATALOG.keys()
+                ]
+                if 'roberta' not in MODEL_CATALOG:
+                    model_choices_for_template.append(('roberta', 'RoBERTa (Deep Learning)'))
+
+                context = {
+                    'submitted_link': submitted_link,
+                    'model_choices': model_choices_for_template,
+                    'show_pro_modal': True,
+                    'pro_modal_message': limit_msg
+                }
+                # rendering main.html with pro modal
+                return render(request, "main.html", context)
+
             else:
-                # If ok to proceed to analysis do it
+                # if ok to proceed, go to loading page
                 if model_name not in MODEL_CATALOG and model_name != 'roberta':
-                    messages.error(request, f"Chosen model ({model_name}) can't be used.")
+                    messages.error(request, f"Wybrany model ({model_name}) jest niedostępny.")
                     return redirect('sentiment_dashboard')
 
                 request.session['analysis_params'] = {

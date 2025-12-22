@@ -39,11 +39,11 @@ def check_video_limit(video_id):
         stats = response["items"][0]["statistics"]
         comment_count = int(stats.get("commentCount", 0))
 
-        # Jeśli liczba komentarzy przekracza limit PRO
+        # If video has more comments than free limit, return False with message
         if comment_count > PRO_COMMENT_LIMIT:
-            msg = (f"Film ma {comment_count} komentarzy. "
-                   f"Wersja darmowa obsługuje do {PRO_COMMENT_LIMIT}. "
-                   "Wykup pakiet PRO, aby analizować tak duże kanały.")
+            msg = (f"The film has {comment_count} comments. "
+                   f"The free version supports up to {PRO_COMMENT_LIMIT}. "
+                   "Purchase the PRO package to analyze such large channels.")
             return False, msg
 
         return True, None
