@@ -11,12 +11,59 @@ import pycld2 as cld2
 load_dotenv()
 
 CONFIDENCE_THRESHOLD = 0.90
+PRO_COMMENT_LIMIT = 10000
 
-def get_yt_comments(video_id, max_results_total=500):
+
+def check_video_limit(video_id):
+    """
+    check if video comment count is within free tier limit
+    Returns (is_within_limit: bool, error_message: str|None)
+    """
+    try:
+        api_service_name = "youtube"
+        api_version = "v3"
+        api_key = os.getenv("API_KEY")
+
+        youtube = googleapiclient.discovery.build(
+            api_service_name, api_version, developerKey=api_key
+        )
+
+        response = youtube.videos().list(
+            part='statistics',
+            id=video_id
+        ).execute()
+
+        if not response.get("items"):
+            return False, "Nie znaleziono wideo o podanym ID lub jest prywatne."
+
+        stats = response["items"][0]["statistics"]
+        comment_count = int(stats.get("commentCount", 0))
+
+        # Jeśli liczba komentarzy przekracza limit PRO
+        if comment_count > PRO_COMMENT_LIMIT:
+            msg = (f"Film ma {comment_count} komentarzy. "
+                   f"Wersja darmowa obsługuje do {PRO_COMMENT_LIMIT}. "
+                   "Wykup pakiet PRO, aby analizować tak duże kanały.")
+            return False, msg
+
+        return True, None
+
+    except Exception as e:
+        return False, f"Błąd weryfikacji wideo: {str(e)}"
+
+
+def get_yt_comments(video_id, max_results_total=PRO_COMMENT_LIMIT):
+    """
+    Download comments from a YouTube video, detect their language,
+    translate non-English comments to English, and return a list of comments in English.
+    1. video_id: str - YouTube video ID
+    2. max_results_total: int - maximum number of comments to retrieve
+    Returns: List of comments in English
+    """
     comments_list = []
 
     try:
-        # TIMER CAŁKOWITY
+        # TIMER ON TOTAL PROCESS
         total_start = time.time()
 
         api_service_name = "youtube"
@@ -35,10 +82,11 @@ def get_yt_comments(video_id, max_results_total=500):
             maxResults=100,
         )
 
-        # TIMERY
+        # TIMERS
         filter_time_total = 0.0
         translation_time_total = 0.0
 
+        # Download comments in pages of max 100 until reaching max_results_total
         while request and len(comments_list) < max_results_total:
             response = request.execute()
 
@@ -51,7 +99,7 @@ def get_yt_comments(video_id, max_results_total=500):
                 if not text:
                     continue
 
-                # TIMER WYKRYWANIE JEZYKA
+                # TIMER FIND LANGUAGE
                 f_start = time.time()
                 try:
                     reliable, textBytesFound, details = cld2.detect(text)
@@ -66,7 +114,7 @@ def get_yt_comments(video_id, max_results_total=500):
                     lang = "unknown"
                 filter_time_total += (time.time() - f_start)
 
-                # TIMER TLUMACZENIE
+                # TIMER TRANSLATING
                 if lang != "en":
                     t_start = time.time()
                     try:
@@ -79,6 +127,12 @@ def get_yt_comments(video_id, max_results_total=500):
 
                 if text:
                     comments_list.append(text)
+
+                if len(comments_list) >= max_results_total:
+                    break
+
+            if len(comments_list) >= max_results_total:
+                break
 
             request = youtube.commentThreads().list_next(
                 previous_request=request,

@@ -1,11 +1,11 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from youtube_integration.services import get_yt_comments
 import re
-from youtube_integration.services import get_yt_comments, get_yt_video_meta
 
 from data_processing.views import MODEL_CATALOG
 import json
+# check video limit
+from youtube_integration.services import check_video_limit
 
 DISPLAY_NAMES = {
     'logistic_regression': 'Regresja Logistyczna',
@@ -31,47 +31,52 @@ def extract_video_id(link):
 
 def sentiment_dashboard(request):
     """
-    Loads yt link and chose of model from form,
-    saves params in session and redirect to run_analysis view.
+    Main view to submit YouTube link and select model for sentiment analysis.
+    Handles form submission, validates input, checks comment limits,
+    and redirects to loading page for analysis.
+    1. GET: Renders the main form.
+    2. POST: Processes the submitted form.
+    3. On success, saves parameters in session and redirects to 'loading' view.
+    4. On error, displays appropriate messages.
     """
-
     submitted_link = ""
 
     if request.method == 'POST':
         submitted_link = request.POST.get("youtube_link", "").strip()
         video_id = extract_video_id(submitted_link)
-
-        # load selected model from form
-        model_name = request.POST.get("model_select", "logistic_regression")
+        model_name = request.POST.get("model_name", "logistic_regression")
 
         if not video_id:
             messages.error(request, "Input valid YouTube link.")
         else:
-            # check if selected model is in catalog
-            if model_name not in MODEL_CATALOG:
-                messages.error(request, f"Chosen model ({model_name}) can't be used.")
+            # Check comment limit before proceeding, when 10000 comments exceeded, show error.
+            is_allowed, error_msg = check_video_limit(video_id)
+
+            if not is_allowed:
+                # Show error message about limit exceeded
+                messages.error(request, error_msg)
+            else:
+                # If ok to proceed to analysis do it
+                if model_name not in MODEL_CATALOG and model_name != 'roberta':
+                    messages.error(request, f"Chosen model ({model_name}) can't be used.")
+                    return redirect('sentiment_dashboard')
+
+                request.session['analysis_params'] = {
+                    'video_id': video_id,
+                    'model_name': model_name
+                }
                 return redirect('loading')
 
-            # save in session params for analysis
-            request.session['analysis_params'] = {
-                'video_id': video_id,
-                'model_name': model_name
-            }
-
-            return redirect('loading')
-
-        return redirect('loading')
-
-    # GET request - load page if no form submitted
-
-    # create list of model choices for template
+    # GET request
     model_choices_for_template = [
         (key, DISPLAY_NAMES.get(key, key.replace('_', ' ').title()))
         for key in MODEL_CATALOG.keys()
     ]
+    if 'roberta' not in MODEL_CATALOG:
+        model_choices_for_template.append(('roberta', 'RoBERTa (Deep Learning)'))
 
     context = {
-        'submitted_link': "",
+        'submitted_link': submitted_link,
         'model_choices': model_choices_for_template,
     }
 
