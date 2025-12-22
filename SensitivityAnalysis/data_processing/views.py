@@ -8,7 +8,7 @@ from django.conf import settings
 from django.views import View
 
 # 1. IMPORT loading yt comments
-from youtube_integration.services import get_yt_comments, get_yt_video_meta
+from youtube_integration.services import get_yt_comments, get_yt_video_meta, PRO_COMMENT_LIMIT
 
 
 # ---------preprocessing  ----------
@@ -120,7 +120,6 @@ def run_analysis(request):
 
     # Map model names to loaded models
     CLASSIFIER = MODEL_CATALOG.get(model_name)
-
     if CLASSIFIER is None or VECTORIZER is None:
         messages.error(request, f"Error: Model '{model_name}' or vector isn't loaded.")
         return redirect('sentiment_dashboard')
@@ -128,7 +127,8 @@ def run_analysis(request):
 
     try:
         # loading comments and video meta from get YT API
-        comments_list = get_yt_comments(video_id, max_results_total=500)
+        comments_list = get_yt_comments(video_id, max_results_total=PRO_COMMENT_LIMIT)
+
         title, thumb, channel, published_at, views, likes = get_yt_video_meta(video_id)
 
         predictions = []
