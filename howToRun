@@ -6,11 +6,11 @@ API_KEY=naszKlucz
 
 
 ABY ODPALIC SERWER :
-cd C:\RepozytoriumGit\Weka2.0
+cd SensitivityAnalysis
 python manage.py runserver
 
 
 ABY ZROC MIGRACJE (ZMIANA W BAZIE DANYCH):
-cd C:\RepozytoriumGit\Weka2.0
+cd SensitivityAnalysis
 python manage.py makemigrations
 python manage.py migrate

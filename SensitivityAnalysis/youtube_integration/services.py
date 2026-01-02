@@ -34,14 +34,14 @@ def check_video_limit(video_id):
         ).execute()
 
         if not response.get("items"):
-            return False, "Nie znaleziono wideo o podanym ID lub jest prywatne."
+            return False, "The video with the specified ID was not found or is private."
 
         stats = response["items"][0]["statistics"]
         comment_count = int(stats.get("commentCount", 0))
 
         # If video has more comments than free limit, return False with message
         if comment_count > PRO_COMMENT_LIMIT:
-            msg = (f"The film has {comment_count} comments. "
+            msg = (f"The video has {comment_count} comments. "
                    f"The free version supports up to {PRO_COMMENT_LIMIT}. "
                    "Purchase the PRO package to analyze such large channels.")
             return False, msg
@@ -49,7 +49,7 @@ def check_video_limit(video_id):
         return True, None
 
     except Exception as e:
-        return False, f"Błąd weryfikacji wideo: {str(e)}"
+        return False, f"Video verification error: {str(e)}"
 
 
 def get_yt_comments(video_id, max_results_total=PRO_COMMENT_LIMIT):
