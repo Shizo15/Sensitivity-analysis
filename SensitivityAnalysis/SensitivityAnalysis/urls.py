@@ -24,5 +24,6 @@ urlpatterns = [
     path('loading/', dashboard_views.loading_view, name='loading'),
     path('analyze/', proces_views.run_analysis, name='run_analysis'),
     path('dashboard/', dashboard_views.results_dashboard, name='results_dashboard'),
+    path('analyze-status/', proces_views.get_analysis_status, name='get_analysis_status'),
 ]
 
