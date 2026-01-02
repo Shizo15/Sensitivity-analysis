@@ -44,7 +44,7 @@
                 </div>
 
                 <div class="mb-4 text-start">
-                    <label for="model_name" class="form-label text-secondary small mb-1">Wybierz model do analizy:</label>
+                    <label for="model_name" class="form-label text-secondary small mb-1">Select a model for analysis:</label>
                     <select class="form-select" id="model_name" name="model_name">
                         <option value="logistic_regression">Logistic Regression</option>
                         <option value="naive_bayes">Naive Bayes</option>
@@ -54,7 +54,6 @@
                              <option value="{{ code }}" selected>{{ name }}</option>
                            {% endif %}
                         {% endfor %}
-                        <option value="roberta">RoBERTa (Deep Learning)</option>
                     </select>
                 </div>
 

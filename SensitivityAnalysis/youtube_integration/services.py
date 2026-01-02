@@ -18,15 +18,23 @@ def check_video_limit(video_id):
         youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=api_key)
         response = youtube.videos().list(part='statistics', id=video_id).execute()
         if not response.get("items"):
+
             return False, "Video with the given ID was not found or is private."
+
         stats = response["items"][0]["statistics"]
         comment_count = int(stats.get("commentCount", 0))
         if comment_count > PRO_COMMENT_LIMIT:
-            msg = (f"The film has {comment_count} comments. Support up to {PRO_COMMENT_LIMIT}.")
+
+            msg = (f"The video has {comment_count} comments. "
+                   f"The free version supports up to {PRO_COMMENT_LIMIT}. "
+                   "Purchase the PRO package to analyze such large channels.")
+            
             return False, msg
         return True, None
     except Exception as e:
+
         return False, f"Verification error: {str(e)}"
+
 
 
 def get_yt_comments(video_id, max_results_total=PRO_COMMENT_LIMIT):
