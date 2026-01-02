@@ -140,3 +140,4 @@ GitHub.sublime-settings
 /.idea
 
 roberta_model/
+.DS_Store
