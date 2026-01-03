@@ -125,7 +125,7 @@ def run_analysis(request):
             for comment in comments_list:
                 inputs = TOKENIZER_ROBERTA(comment, return_tensors="pt", truncation=True, max_length=128, padding=True)
                 with torch.no_grad(): outputs = CLASSIFIER(**inputs)
-                predictions.append(torch.argmax(F.softmax(outputs.logits, dim=-1), dim=-1).item() - 1)
+                predictions.append(torch.argmax(F.softmax(outputs.logits, dim=-1), dim=-1).item())
             print(f"RoBERTa classification: {time.time() - s_time:.2f} s")
         else:
             update_step(30, "Processing text and filtering...")
