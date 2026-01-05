@@ -58,16 +58,24 @@
       border-radius: 10px;
       max-height: 220px;   /* scroll height inside the card */
       overflow-y: auto;
+      overflow-x: hidden; /* Ukrywamy poziomy pasek przewijania */
     }
     .comments-table{
       width: 100%;
       border-collapse: collapse;
       font-size: 13px;
+      /* POPRAWKA 1: Sztywny układ tabeli */
+      table-layout: fixed;
     }
     .comments-table th, .comments-table td{
       padding: 10px;
       border-bottom: 1px solid #f1f5f9;
       vertical-align: top;
+
+      /* POPRAWKA 2: Wymuszenie zawijania tekstu */
+      word-wrap: break-word;
+      overflow-wrap: break-word;
+      white-space: normal;
     }
     .comments-table th{
       position: sticky;
@@ -87,7 +95,7 @@
       text-transform: capitalize;
       background: #f1f5f9;
       color: #0f172a;
-      white-space: nowrap;
+      white-space: nowrap; /* Badge nie powinien się łamać */
     }
   </style>
 </head>
@@ -114,11 +122,9 @@
 
     <div class="grid">
 
-      <!-- 1) Comments analyzed + scroll list -->
       <div class="card" style="grid-column: span 6;">
         <h3>Comments analyzed</h3>
 
-        <!-- number aligned near top -->
         <div style="font-size:28px;font-weight:800;color:#0f172a;margin-top:6px;">
           {{ comment_count|default:"0" }}
           <span style="font-weight:400;font-size:14px;color:#334155;">comments</span>
@@ -128,8 +134,8 @@
           <table class="comments-table">
             <thead>
               <tr>
-                <th style="width:78%;">Comment</th>
-                <th style="width:22%;">Sentiment</th>
+                <th style="width:75%;">Comment</th>
+                <th style="width:25%;">Sentiment</th>
               </tr>
             </thead>
             <tbody>
@@ -148,7 +154,6 @@
         </div>
       </div>
 
-      <!-- 2) Pie chart -->
       <div class="card" style="grid-column: span 6;">
         <h3>Sentiment share</h3>
         {% if sentiment_share %}
@@ -160,7 +165,6 @@
         {% endif %}
       </div>
 
-      <!-- 3) Average sentiment -->
       <div class="card" style="grid-column: span 6;">
         <h3>Overall sentiment (avg)</h3>
         {% if avg_sentiment_score is not None %}
@@ -184,7 +188,6 @@
         {% endif %}
       </div>
 
-      <!-- 4) Dominant sentiment -->
       <div class="card" style="grid-column: span 6;">
         <h3>Dominant sentiment</h3>
         {% if dominant_sentiment %}
