@@ -18,26 +18,21 @@ def check_video_limit(video_id):
         youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=api_key)
         response = youtube.videos().list(part='statistics', id=video_id).execute()
         if not response.get("items"):
-
             return False, "Video with the given ID was not found or is private."
 
         stats = response["items"][0]["statistics"]
         comment_count = int(stats.get("commentCount", 0))
         if comment_count > PRO_COMMENT_LIMIT:
-
             msg = (f"The video has {comment_count} comments. "
                    f"The free version supports up to {PRO_COMMENT_LIMIT}. "
                    "Purchase the PRO package to analyze such large channels.")
-            
             return False, msg
         return True, None
     except Exception as e:
-
         return False, f"Verification error: {str(e)}"
 
 
-
-def get_yt_comments(video_id, max_results_total=PRO_COMMENT_LIMIT):
+def get_yt_comments(video_id, max_results_total=PRO_COMMENT_LIMIT, progress_callback=None):
     print(f"\n--- STARTING YOUTUBE DOWNLOAD ---")
     start_time = time.time()
     comments_list = []
@@ -67,13 +62,17 @@ def get_yt_comments(video_id, max_results_total=PRO_COMMENT_LIMIT):
                     to_translate_text.append(text)
                 if len(comments_list) >= max_results_total: break
 
-            print(f"Downloaded: {len(comments_list)} comments...")
+            # PROGRESS UPDATE: DOWNLOADING AND FILTERING (10-40%)
+            if progress_callback:
+                progress = 10 + int((len(comments_list) / max_results_total) * 30)
+                progress_callback(progress, f"Downloading & Filtering: {len(comments_list)} comments...")
+
             request = youtube.commentThreads().list_next(request, response)
 
-        print(f"Download took: {time.time() - start_time:.2f} s")
-
         if to_translate_text:
-            print(f"Starting translation of {len(to_translate_text)} comments...")
+            if progress_callback:
+                progress_callback(45, f"Translating {len(to_translate_text)} comments...")
+
             t_start = time.time()
             try:
                 translator = GoogleTranslator(source="auto", target="en")
@@ -83,9 +82,11 @@ def get_yt_comments(video_id, max_results_total=PRO_COMMENT_LIMIT):
                         comments_list[to_translate_index[i]] = translated_text
             except Exception as e:
                 logging.warning(f"Translation error: {e}")
-            print(f"Translation took: {time.time() - t_start:.2f} s")
 
-        print(f"--- YOUTUBE SERVICE FINISHED: {time.time() - start_time:.2f} s ---\n")
+            if progress_callback:
+                progress_callback(60, "Translation finished.")
+
+        print(f"--- YOUTUBE SERVICE FINISHED ---")
         return comments_list
     except Exception as e:
         logging.error(f"Unexpected error: {e}")

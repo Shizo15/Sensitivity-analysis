@@ -89,8 +89,7 @@ try:
 
 except Exception as e:
     VECTORIZER = None
-    MODEL_CATALOG = {'no_models': None,}
-    print(f"Error by loading models: {e}")
+    MODEL_CATALOG = {'no_models': None}
 
 
 # NEW STATUS FUNCTION
@@ -99,8 +98,6 @@ def get_analysis_status(request):
 
 
 def run_analysis(request):
-    print("\n--- STARTING ANALYSIS (views.py) ---")
-    start_total = time.time()
     params = request.session.pop('analysis_params', None)
     if not params: return redirect('sentiment_dashboard')
 
@@ -112,34 +109,35 @@ def run_analysis(request):
         request.session.save()
 
     try:
-        # STEP 1
-        update_step(10, "Downloading comments from YouTube...")
-        comments_list = get_yt_comments(video_id)
+        # STEP 1, 2, 3 (YouTube: Download, Filter, Translate)
+        update_step(5, "Connecting to YouTube API...")
+        comments_list = get_yt_comments(video_id, progress_callback=update_step)
+
+        update_step(65, "Fetching video metadata...")
         title, thumb, channel, published_at, views, likes = get_yt_video_meta(video_id)
 
         predictions = []
-        # STEP 2
+        # STEP 4: MODEL
         if model_name == 'roberta':
-            update_step(40, "Analyzing RoBERTa model (Deep Learning)...")
-            s_time = time.time()
-            for comment in comments_list:
+            update_step(70, "Deep Learning Analysis (RoBERTa)...")
+            for i, comment in enumerate(comments_list):
                 inputs = TOKENIZER_ROBERTA(comment, return_tensors="pt", truncation=True, max_length=128, padding=True)
-                with torch.no_grad(): outputs = CLASSIFIER(**inputs)
+                with torch.no_grad():
+                    outputs = CLASSIFIER(**inputs)
                 predictions.append(torch.argmax(F.softmax(outputs.logits, dim=-1), dim=-1).item())
-            print(f"RoBERTa classification: {time.time() - s_time:.2f} s")
+
+                if i % 50 == 0:
+                    update_step(70 + int((i / len(comments_list)) * 20),
+                                f"Analyzing comment {i}/{len(comments_list)}...")
         else:
-            update_step(30, "Processing text and filtering...")
-            s_time = time.time()
+            update_step(70, "Preprocessing text for ML model...")
             processed = [" ".join(text_tokenizer(c)) for c in comments_list]
-            print(f"Preprocessing: {time.time() - s_time:.2f} s")
 
-            update_step(70, f"Running model: {model_name}...")
-            s_time = time.time()
+            update_step(85, f"Running {model_name} classifier...")
             predictions = CLASSIFIER.predict(VECTORIZER.transform(processed))
-            print(f"ML Classification: {time.time() - s_time:.2f} s")
 
-        # STEP 3: CALCULATIONS
-        update_step(90, "Calculating final results...")
+        # STEP 5: FINALIZATION
+        update_step(95, "Generating final report...")
         idx_to_label = {0: 'negative', 1: 'neutral', 2: 'positive'}
         classified_comments = [{'text': t, 'label': idx_to_label.get(int(p), 'unknown')} for t, p in
                                zip(comments_list, predictions)]
@@ -158,7 +156,7 @@ def run_analysis(request):
             dominant_percent = round((sentiment_counts[dominant_class] / total) * 100.0, 1)
         else:
             avg_score = avg_percent = 0
-            dominant_sentiment = "N/A"
+            dominant_sentiment = "N/A";
             dominant_percent = 0
 
         request.session['last_stats'] = {
@@ -170,7 +168,6 @@ def run_analysis(request):
             'model_used': model_name, 'classified_comments': classified_comments,
         }
 
-        print(f"--- ANALYSIS FINISHED: {time.time() - start_total:.2f} s ---\n")
         update_step(100, "Done!")
         return JsonResponse({"status": "done"})
     except Exception as e:
